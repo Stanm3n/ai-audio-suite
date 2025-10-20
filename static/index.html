@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Audio Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.4"> <style>
+        .job-status.queued { 
+            background-color: var(--text-muted-color); 
+            color: var(--bg-color); 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 AI Audio Suite</h1>
+        </header>
+
+        <main id="batch" class="tab-content active">
+            <section class="card">
+                <h2>1. Datei hochladen & Einstellungen</h2>
+                <form id="upload-form">
+                    <div id="drop-zone">
+                        <p>Audio- oder Videodatei hierher ziehen oder <strong>klicken zum Auswählen</strong></p>
+                        <input type="file" id="file-input" name="file" hidden>
+                        <p id="file-name-display"></p>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="control-group">
+                            <label for="model-select">KI-Modell</label>
+                            <select id="model-select" name="model_name" class="select-input"></select>
+                        </div>
+                        <div class="control-group">
+                            <label for="language-select">Sprache (Optional)</label>
+                            <select id="language-select" name="language" class="select-input">
+                                <option value="">Automatisch erkennen</option>
+                                <option value="de">Deutsch</option>
+                                <option value="en">Englisch</option>
+                                <option value="es">Spanisch</option>
+                                <option value="fr">Französisch</option>
+                                <option value="it">Italienisch</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="translate-select">Übersetzen nach</label>
+                            <select id="translate-select" name="translate_to" class="select-input"></select>
+                        </div>
+                        <div class="control-group">
+                            <label for="device-select">Gerät</label> <select id="device-select" name="device" class="select-input"></select>
+                        </div>
+                    </div>
+                    <button type="submit" id="submit-btn" class="btn btn-primary" disabled>Transkription starten</button>
+                </form>
+            </section>
+            
+            <section class="card">
+                <h2>2. Oder direkt aufnehmen</h2>
+                <div class="record-controls">
+                    <button id="record-btn" class="btn-record">🎤 Aufnahme starten</button>
+                    <button id="stop-record-btn" class="btn-stop" disabled>⏹️ Aufnahme stoppen & verarbeiten</button>
+                </div>
+                <div id="record-status" class="status-indicator"></div>
+            </section>
+
+            <section class="card">
+                <div class="status-header">
+                    <h2>3. Jobs & Ergebnisse</h2>
+                </div>
+                <div id="jobs-container">
+                    <p class="placeholder">Noch keine Jobs gestartet. Die Ergebnisse erscheinen hier.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <template id="job-card-template">
+        <div class="job-card card" data-job-id="">
+            <div class="job-card-header">
+                <h3 class="job-filename"></h3>
+                <div class="job-total-time"></div>
+                <div class="job-status queued">
+                    <div class="loader"></div> <span>In Warteschlange...</span>
+                </div>
+                <button class="cancel-btn btn-cancel" title="Job abbrechen">
+                    ✕ Abbrechen
+                </button>
+            </div>
+            <div class="job-card-body" hidden>
+                <div class="job-timing-breakdown"></div>
+                
+                <div class="result-toolbar">
+                    <div class="view-options"></div>
+                    <div class="download-buttons">
+                        <span>Download:</span>
+                        <button class="dl-button download-srt">SRT</button>
+                        <button class="dl-button download-txt">TXT</button>
+                    </div>
+                </div>
+                <div class="result-wrapper">
+                    <pre class="result-output"></pre>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="script.js"></script>
+</body>
+</html>
