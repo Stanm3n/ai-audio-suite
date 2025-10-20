@@ -5,7 +5,7 @@
 ![PyTorch](https://img.shields.io/badge/PyTorch-CUDA%2012.1-blue?logo=pytorch&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-Dieses Projekt ist eine ausfallsichere High-Throughput-API zur Transkription und Übersetzung sehr großer Audiodateien (5GB+). Es handelt sich um eine Architektur-Demo, die entwickelt wurde, um die Kernherausforderungen beim Betrieb schwerer KI-Modelle in einer Produktionsumgebung zu lösen: **Stabilität, Effizienz und Datenschutz.**
+Dieses Projekt ist eine ausfallsichere High-Throughput-API zur Transkription und Übersetzung von Audiodateien beliebiger Länge (mehrere Stunden). Es handelt sich um eine Architektur-Demo**
 
 Das System läuft zu 100 % lokal und verarbeitet sensible Audiodaten (DSGVO-konform), ohne dass diese jemals Ihr Netzwerk verlassen.
 
