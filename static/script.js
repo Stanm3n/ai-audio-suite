@@ -186,8 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(`/api/v1/jobs/${jobId}/cancel?access_token=${storedData.access_token}`, {
-                method: 'POST'
+            const response = await fetch(`/api/v1/jobs/${jobId}/cancel`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${storedData.access_token}` }
             });
 
             if (!response.ok) {
@@ -295,9 +296,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activePolls.has(jobId)) return;
         const intervalId = setInterval(async () => {
             try {
-                const response = await fetch(`/api/v1/results/${jobId}`);
+                const token = jobDataStore.get(jobId)?.access_token;
+                if (!token) {
+                    stopPolling(jobId, intervalId);
+                    return;
+                }
+                const response = await fetch(`/api/v1/results/${jobId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 if (!response.ok) {
-                    if (response.status === 404) stopPolling(jobId, intervalId); 
+                    if ([403, 404].includes(response.status)) stopPolling(jobId, intervalId);
                     return;
                 }
                 const data = await response.json();
@@ -500,10 +508,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const outputMode = modeRadio ? modeRadio.value : 'original';
         const accessToken = storedData.access_token;
 
-        const downloadUrl = `/api/v1/results/${jobId}/download?format=${format}&output=${outputMode}&access_token=${accessToken}`;
+        const downloadUrl = `/api/v1/results/${jobId}/download?format=${format}&output=${outputMode}`;
 
         try {
-            const response = await fetch(downloadUrl);
+            const response = await fetch(downloadUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
 
             if (!response.ok) {
                 let errorDetail = `Download fehlgeschlagen (Status ${response.status})`;

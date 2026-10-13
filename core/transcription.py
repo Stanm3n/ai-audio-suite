@@ -70,7 +70,6 @@ def run_worker_loop(device: str, q: queue.Queue):
             
             if not job_data:
                 logger.warning(f"[{device}] Hat Job {job_id} gezogen, aber er existiert nicht mehr.")
-                q.task_done()
                 continue
             
             temp_audio_path = job_data.temp_audio_path
@@ -84,7 +83,6 @@ def run_worker_loop(device: str, q: queue.Queue):
                         logger.info(f"[CLEANUP] Temporäre Datei für gecancelten Queue-Job gelöscht: {temp_audio_path}")
                     except Exception as e:
                          logger.warning(f"[CLEANUP] Konnte Temp-Datei nicht löschen: {e}")
-                q.task_done()
                 continue
 
             job_data.status = JobStatus.PROCESSING

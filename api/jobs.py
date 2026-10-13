@@ -7,9 +7,10 @@ import torch
 import time
 import re
 import logging
+import secrets
 from fastapi import (
     APIRouter, UploadFile, File, Form, 
-    HTTPException, Response, status
+    HTTPException, Response, status, Depends, Header
 )
 from typing import Optional, Dict, Any, List
 
@@ -33,6 +34,31 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 MAX_JOBS_IN_MEMORY = settings.MAX_JOBS_IN_MEMORY 
+
+
+def require_access_token(
+    authorization: Optional[str] = Header(None),
+    access_token: Optional[str] = None,
+) -> str:
+    """Prefer a Bearer header; retain query tokens for existing clients."""
+    if authorization is not None:
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() != "bearer" or not token.strip():
+            raise HTTPException(status_code=403, detail="Ungültiger oder fehlender Access Token")
+        return token.strip()
+    if not access_token:
+        raise HTTPException(status_code=403, detail="Ungültiger oder fehlender Access Token")
+    return access_token
+
+
+def authorized_job(job_id: str, access_token: str) -> Job:
+    """Caller holds jobs_lock while looking up and reading the job."""
+    job = jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job nicht gefunden")
+    if not secrets.compare_digest(job.access_token.encode(), access_token.encode()):
+        raise HTTPException(status_code=403, detail="Ungültiger oder fehlender Access Token")
+    return job
 
 # ... (sanitize_filename, submit_transcription_job, cancel_job, get_job_result, list_all_jobs, get_system_status bleiben) ...
 def sanitize_filename(filename: str) -> str:
@@ -143,18 +169,13 @@ async def submit_transcription_job(
 
 
 @router.post("/api/v1/jobs/{job_id}/cancel", tags=["Jobs"])
-def cancel_job(job_id: str, access_token: Optional[str] = None) -> Dict[str, Any]:
+def cancel_job(job_id: str, access_token: str = Depends(require_access_token)) -> Dict[str, Any]:
     """
     Bricht einen laufenden oder in der Queue wartenden Job ab.
     Erfordert den access_token zur Authentifizierung.
     """
     with jobs_lock:
-        job = jobs.get(job_id)
-        if job is None:
-            raise HTTPException(status_code=404, detail="Job nicht gefunden")
-        
-        if job.access_token != access_token:
-            raise HTTPException(status_code=403, detail="Ungültiger oder fehlender Access Token")
+        job = authorized_job(job_id, access_token)
         
         current_status = job.status
         if current_status not in [JobStatus.PROCESSING, JobStatus.QUEUED]:
@@ -181,12 +202,10 @@ def cancel_job(job_id: str, access_token: Optional[str] = None) -> Dict[str, Any
         return { "job_id": job_id, "message": "Job konnte nicht zum Abbruch markiert werden (Status evtl. geändert)", "cancelled": False }
 
 @router.get("/api/v1/results/{job_id}", tags=["Jobs"], response_model=JobStatusResponse)
-def get_job_result(job_id: str) -> JobStatusResponse:
+def get_job_result(job_id: str, access_token: str = Depends(require_access_token)) -> JobStatusResponse:
     """Holt den Status und das Ergebnis eines einzelnen Jobs."""
     with jobs_lock: 
-        job = jobs.get(job_id)
-        if job is None:
-            raise HTTPException(status_code=404, detail="Job nicht gefunden")
+        job = authorized_job(job_id, access_token)
         
         job_dict = job.model_dump(exclude={"access_token", "temp_audio_path"})
         
@@ -194,13 +213,16 @@ def get_job_result(job_id: str) -> JobStatusResponse:
 
 
 @router.get("/api/v1/jobs", tags=["Jobs"])
-def list_all_jobs() -> List[Dict[str, Any]]:
-    """Listet alle Jobs im Speicher auf."""
+def list_all_jobs(access_token: str = Depends(require_access_token)) -> List[Dict[str, Any]]:
+    """List only jobs authorized by the supplied job token."""
     with jobs_lock: 
         job_list = [
             j.model_dump(exclude={"access_token", "temp_audio_path"}) 
             for j in jobs.values()
+            if secrets.compare_digest(j.access_token.encode(), access_token.encode())
         ]
+    if not job_list:
+        raise HTTPException(status_code=403, detail="Ungültiger oder fehlender Access Token")
     sorted_jobs = sorted(job_list, key=lambda j: j['created_at'], reverse=True)
     return sorted_jobs
 
@@ -243,7 +265,7 @@ def download_job_result(
     job_id: str,
     format: ExportFormat = ExportFormat.srt,
     output: OutputType = OutputType.original,
-    access_token: Optional[str] = None
+    access_token: str = Depends(require_access_token)
 ) -> Response:
     """Stellt das Job-Ergebnis als Datei-Download bereit."""
     
@@ -255,11 +277,7 @@ def download_job_result(
     job_filename: Optional[str] = None
     
     with jobs_lock: 
-        job = jobs.get(job_id)
-        if job is None:
-            raise HTTPException(status_code=404, detail="Job nicht gefunden")
-        if job.access_token != access_token:
-            raise HTTPException(status_code=403, detail="Ungültiger oder fehlender Access Token")
+        job = authorized_job(job_id, access_token)
         
         job_status = job.status
         job_filename = job.filename
