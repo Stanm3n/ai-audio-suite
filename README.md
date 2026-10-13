@@ -2,7 +2,7 @@
 
 Eine lokal betreibbare Anwendung zur Transkription, zeitlichen Ausrichtung und optionalen Übersetzung von Audiodateien. Das Portfolio-Projekt verbindet WhisperX, ein Rosetta-Übersetzungsmodell, FastAPI und eine Browseroberfläche.
 
-Ich habe das Projekt mit Unterstützung von KI-Coding-Werkzeugen umgesetzt und durch praktische Tests und Fehlersuche weiterentwickelt. Mein Fokus liegt auf der Integration der Komponenten, der Einrichtung der Laufzeitumgebung und der iterativen Verbesserung des Verhaltens.
+Ich habe das Projekt umgesetzt und durch praktische Tests und Fehlersuche weiterentwickelt. Mein Fokus liegt auf der Integration der Komponenten, der Einrichtung der Laufzeitumgebung und der iterativen Verbesserung des Verhaltens.
 
 ![AI Audio Suite in Aktion](./assets/GIFDemo.gif)
 
